@@ -36,6 +36,33 @@ ENTRYPOINT ["dbt"]
 RUN python -m pip install --no-cache-dir "dbt-core @ git+https://github.com/dbt-labs/dbt-core@${commit_ref}#subdirectory=core"
 
 
+
+
+#Install the odbc driver as a precondition
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+
+#Download appropriate package for the OS version
+#Choose only ONE of the following, corresponding to your OS version
+
+
+#Debian 12
+RUN curl https://packages.microsoft.com/config/debian/12/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+
+RUN sudo apt-get update
+RUN sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+# optional: for bcp and sqlcmd
+RUN sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
+RUN echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+RUN source ~/.bashrc
+# optional: for unixODBC development headers
+RUN sudo apt-get install -y unixodbc-dev
+# optional: kerberos library for debian-slim distributions
+RUN sudo apt-get install -y libgssapi-krb5-2
+
+
+RUN pip install -U dbt-fabric
+
+
 FROM base as dbt-postgres
 
 ARG commit_ref=main
